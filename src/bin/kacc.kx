@@ -1,2 +1,55 @@
-# This is a sample hook script file. Feel free to modify this, and it'll be an executable automatically.
-System.println("Welcome to the package of kacc.");
+using Process;
+
+/*
+|   Option   |                                                                                                                Meaning                                                                                                                 |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `-d`       | Makes definition file named y.tab.h, which contains definitions of token values and the type of semantic stack. (C language only)                                                                                                      |
+| `-v`       | Generates file y.output which contains human-readable parser tables and diagnostics.                                                                                                                                                   |
+| `-l`       | Does not insert #line control directives in y.tab.c.                                                                                                                                                                                   |
+| `-t`       | Generates debugging code.  Compiling with -DYYDEBUG option gives the same effect.                                                                                                                                                      |
+| `-p XX`    | Uses XX rather than yy as the prefix of global identifiers in the parser.  You can avoid collision of external symbols when you use more than one parser in the same program by specifing this option. (C language only)               |
+*/
+
+const isWindows = System.PLATFORM.endsWith("-WIN");
+const pkglibpath = __FILE__.replace("\\", "/").replace(new Regex("^" + $pkgpath.replace("\\", "/") + "/*"), "");
+const [ pkgname, version ] = pkglibpath.split("/");
+const pkgpath = $pkgpath.replace("\\", "/") / pkgname / version;
+const PARSER_KMYACC = isWindows ? "bin/exec/kmyacc.exe" : "bin/exec/kmyacc";
+const PARSER_GENEERATOR = pkgpath / PARSER_KMYACC;
+const PARSER_TEMPALTE = pkgpath / "etc/kmyacc.kx.parser";
+
+$$.shift();
+var opt, command = [ PARSER_GENEERATOR, "-m", PARSER_TEMPALTE ];
+while (opt = System.getopt($$, "dvltp:")) {
+    switch (opt.type) {
+    case 'd':
+    case 'v':
+    case 'l':
+    case 't':
+        command.push("-" + opt.type);
+        break;
+    case 'p':
+        command.push("-" + opt.type + " " + opt.arg);
+        break;
+    case '-': {
+        var file = isWindows ? opt.arg.replace("\\", "/") : opt.arg;
+        command.push(file.replace($pwd + "/", ""));
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+# System.println(command);
+var p1 = new Process(command, { out: $stdout, err: $stderr }).run();
+p1.wait();
+
+if (File.exists("y.tab.c")) {
+    File.remove("parser.kx");
+    File.rename("y.tab.c", "parser.kx");
+}
+if (File.exists("y.output")) {
+    File.remove("parser.output");
+    File.rename("y.output", "parser.output");
+}

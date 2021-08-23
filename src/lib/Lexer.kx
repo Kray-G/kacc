@@ -1,0 +1,100 @@
+const KACC_LEXER_STATE_INITIAL = 'INITIAL';
+const KACC_LEXER_STATE_EOF = -1;
+const KACC_LEXER_SKIP = -2;
+
+namespace Kacc {
+
+class Lexer {
+
+    var cur_ = KACC_LEXER_STATE_INITIAL;
+    var inited_ = [];
+    var states_ = [];
+    var keywords_ = [];
+    var text_, pos_ = 0;
+
+    public addStateRule(state, pattern, action) {
+        if (!state.isString) {
+            throw RuntimeException("State name should be a string.");
+        }
+        var callback = action.isFunction ? action : null;
+        var token = action.isInteger ? action : null;
+        states_[state] ??= [];
+        states_[state].push({ pattern, callback, token });
+    }
+
+    public addRule(pattern, action) {
+        return addStateRule(KACC_LEXER_STATE_INITIAL, pattern, action);
+    }
+
+    public addStateKeyword(state, word, token) {
+        if (!state.isString) {
+            throw RuntimeException("State name should be a string.");
+        }
+        keywords_[state] ??= [];
+        keywords_[state][word] = token;
+    }
+
+    public addKeyword(word, token) {
+        return addStateKeyword(KACC_LEXER_STATE_INITIAL, word, token);
+    }
+
+    public reset(text) {
+        inited_[cur_].reset = false;
+        text_ = text;
+        pos_ = 0;
+    }
+
+    public setState(state) {
+        cur_ = state;
+    }
+
+    private scan(states, yylval) {
+        for (var { pattern, callback, token } in states) {
+            pattern.setPosition(pos_);
+            if (pattern.find() && (found = pattern.group[0]).begin == pos_) {
+                pos_ = found.end;
+                yylval.value = found.string;
+                if (callback.isFunction) {
+                    return callback(yylval);
+                }
+                return token;
+            }
+        }
+        return text_[pos_++];
+    }
+
+    public yylex(yylval) {
+        var states = states_[cur_];
+        if (!states) {
+            throw RuntimeException("Invalid state of '%{cur_}'.");
+        }
+        if (!inited_[cur_].reset) {
+            inited_[cur_].reset = true;
+            if (!inited_[cur_].initialized) {
+                inited_[cur_].initialized = true;
+                var keywords = keywords_[cur_];
+                if (keywords.isObject) {
+                    var keys = keywords.keySet().sort(&(e1, e2) => e2.length() <=> e1.length());
+                    states.unshift({
+                        pattern: new Regex("(" + keys.join(")|(") + ")"),
+                        callback: &(this, value) => keywords[value] ?? KACC_LEXER_STATE_EOF,
+                    });
+                }
+            }
+            for (var { pattern } in states) {
+                pattern.reset(text_);
+            }
+        }
+        if (pos_ < text_.length()) {
+            var r;
+            do {
+                r = scan(states, yylval);
+            } while (r == KACC_LEXER_SKIP);
+            return r;
+        }
+        return KACC_LEXER_STATE_EOF;
+    }
+
+}
+
+} // namespace Kacc
