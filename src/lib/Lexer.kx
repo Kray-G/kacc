@@ -32,6 +32,14 @@ class Lexer {
         return addStateRule(KACC_LEXER_STATE_INITIAL, pattern, token, action);
     }
 
+    public addStateSkip(state, pattern) {
+        return addStateRule(state, pattern, KACC_LEXER_SKIP);
+    }
+
+    public addSkip(pattern) {
+        return addStateRule(KACC_LEXER_STATE_INITIAL, pattern, KACC_LEXER_SKIP);
+    }
+
     public addStateKeyword(state, word, token) {
         if (!state.isString) {
             throw RuntimeException("State name should be a string.");
@@ -45,7 +53,8 @@ class Lexer {
     }
 
     public reset(text) {
-        inited_[cur_].reset = false;
+        cur_ = KACC_LEXER_STATE_INITIAL;
+        inited_.keySet().each { => inited_[_1].reset = false };
         text_ = text;
         pos_ = 0;
     }

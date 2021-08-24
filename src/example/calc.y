@@ -41,35 +41,24 @@ expr
 %%
 
 /* Lexical analyzer */
-
 var lexer = new Kacc.Lexer();
-lexer.addRule(/[a-zA-Z][a-zA-Z0-9]*/, TOKEN_IDENTIFIER);
-lexer.addRule(/[ \t\r]+/, KACC_LEXER_SKIP);
-lexer.addRule(/[1-9][0-9]*/) { &(yylval)
-    yylval.value = Integer.parseInt(yylval.value);
-    return TOKEN_NUMBER;
-};
+lexer.addSkip(/[ \t\r]+/);
+lexer.addRule(/[_a-zA-Z][_a-zA-Z0-9]*/, TOKEN_IDENTIFIER);
+lexer.addRule(/[1-9][0-9]*/, TOKEN_NUMBER) { &(value) => Integer.parseInt(value) };
 
 /* Parser */
-
 var vars = {};
 var parser = new Kacc.Parser(lexer, {
-    yyerror: &(msg) => {
-        System.println(("ERROR! " + msg).red().bold());
-    },
-    setVar: &(name, value) => {
-        vars[name] = value;
-    },
-    getVar: &(name) => {
-        return vars[name];
-    }
+    yyerror: &(msg)         => System.println(("ERROR! " + msg).red().bold()),
+    setVar:  &(name, value) => vars[name] = value,
+    getVar:  &(name)        => vars[name],
 });
 
 /* Parse expressions */
-
 var exprs = [
     "2+3",
     "3 + 5 * 9",
+    "(3 + 5) * 9",
     "c=24",
     "a 1",  // Syntax error
     "a=10",
@@ -78,6 +67,8 @@ var exprs = [
 ];
 exprs.each { &(expr)
     parser.parse(expr.trim()) { &(r)
-        System.println(expr, " => ", r.value);
+        if (r.value != "<error>") {
+            System.println(expr, " => ", r.value);
+        }
     };
 };
