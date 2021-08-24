@@ -96,7 +96,7 @@ expr
 var lexer = new Kacc.Lexer();
 lexer.addSkip(/[ \t\r]+/);
 lexer.addRule(/[_a-zA-Z][_a-zA-Z0-9]*/, TOKEN_IDENTIFIER);
-lexer.addRule(/[1-9][0-9]*/, TOKEN_NUMBER) { &(value) => Integer.parseInt(value) };
+lexer.addRule(/[0-9]+/, TOKEN_NUMBER) { &(value) => Integer.parseInt(value) };
 
 /* Parser */
 var vars = {};

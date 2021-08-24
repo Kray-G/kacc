@@ -179,6 +179,7 @@ $endif
         var yysstk = [];
         var yylval, yyn, yysp = 0;
         var yyerrflag = 0;
+        var yyval;
 
         yystate = 0;
         yychar = -1;
