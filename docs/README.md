@@ -7,16 +7,15 @@ It is easy to use a Kacc Parser with a Lexer.
 
 ## Usage
 
-Use the command of `kacc` with some options to generate your own parser.
+Use the `kacc` command with some options if necessary to generate your own parser.
 
 ```
 $ kacc [-vltpod] parser.y
 ```
 
-* Hints
-  * The generated parser will be outputted to the `parser.kx` file.
-  * If you want to see the detail of a state, use `-v` to output the `parser.output` file.
-  * If you want to debug it, use `-t` to make it be able to run with a debug mode.
+* The generated parser will be outputted to the `parser.kx` file.
+* If you want to see the detail of a state, use `-v` to output the `parser.output` file.
+* If you want to debug it, use `-t` to make it be able to run with a debug mode.
 
 ## Options
 

@@ -23,9 +23,15 @@ $ kip install kacc
 
 ### Command Line
 
+Use the `kacc` command with some options if necessary to generate your own parser.
+
 ```
 $ kacc [-vltpod] parser.y
 ```
+
+* The generated parser will be outputted to the `parser.kx` file.
+* If you want to see the detail of a state, use `-v` to output the `parser.output` file.
+* If you want to debug it, use `-t` to make it be able to run with a debug mode.
 
 ### Options
 
