@@ -27,7 +27,7 @@ $ kacc [-vltpod] parser.y
 * `-l`
   * Does not insert #line control directives in `parser.kx`.
 * `-t`
-  * Generates debugging code.
+  * Generates a debugging code.
 * `-p XX`
   * Uses `XX` as a namespace of the parser rather than `Kacc`.
     You can avoid collision of external symbols when you use more than one

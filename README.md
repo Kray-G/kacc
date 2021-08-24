@@ -41,7 +41,7 @@ $ kacc [-vltpod] parser.y
 | --------- | -------------------------------------------------------------------------------------------------- |
 | `-v`      | Generates the file of `parser.output` which contains human-readable parser tables and diagnostics. |
 | `-l`      | Does not insert #line control directives in `parser.kx`.                                           |
-| `-t`      | Generates debugging code.                                                                          |
+| `-t`      | Generates a debugging code.                                                                        |
 | `-p XX`   | Uses `XX` rather than `Kacc` as a namespace of the parser.                                         |
 | `-o FILE` | `FILE` will be used as an output file instead of `parser.kx` which is by default.                  |
 | `-d FILE` | `FILE` will be used instead of `parser.output`.                                                    |
