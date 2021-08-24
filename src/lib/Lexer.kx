@@ -12,18 +12,24 @@ class Lexer {
     var keywords_ = [];
     var text_, pos_ = 0;
 
-    public addStateRule(state, pattern, action) {
+    public addStateRule(state, pattern, token, action) {
+        if (token.isFunction && action.isUndefined) {
+            action = token;
+            token = null;
+        }
         if (!state.isString) {
             throw RuntimeException("State name should be a string.");
         }
         var callback = action.isFunction ? action : null;
-        var token = action.isInteger ? action : null;
+        if (token.isUndefined && action.isInteger) {
+            token = action;
+        }
         states_[state] ??= [];
         states_[state].push({ pattern, callback, token });
     }
 
-    public addRule(pattern, action) {
-        return addStateRule(KACC_LEXER_STATE_INITIAL, pattern, action);
+    public addRule(pattern, token, action) {
+        return addStateRule(KACC_LEXER_STATE_INITIAL, pattern, token, action);
     }
 
     public addStateKeyword(state, word, token) {
@@ -55,7 +61,10 @@ class Lexer {
                 pos_ = found.end;
                 yylval.value = found.string;
                 if (callback.isFunction) {
-                    return callback(yylval);
+                    if (token.isUndefined) {
+                        return callback(yylval);
+                    }
+                    yylval.value = callback(yylval.value);
                 }
                 return token;
             }

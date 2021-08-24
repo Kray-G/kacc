@@ -172,8 +172,8 @@ $endif
     var yylex = lexer_.yylex;
 
     /*
-    * Parser entry point
-    */
+     * Parser entry point
+     */
     private yyparse() {
         var yyastk = [];
         var yysstk = [];
@@ -207,12 +207,12 @@ $endif
                         && yyn < YYLAST && yycheck[yyn] == yychar))
                     && (yyn = yyaction[yyn]) != YYDEFAULT) {
                     /*
-                    * >= YYNLSTATE: shift and reduce
-                    * > 0: shift
-                    * = 0: accept
-                    * < 0: reduce
-                    * = -YYUNEXPECTED: error
-                    */
+                     * >= YYNLSTATE: shift and reduce
+                     * > 0: shift
+                     * = 0: accept
+                     * < 0: reduce
+                     * = -YYUNEXPECTED: error
+                     */
                     if (yyn > 0) {
                         /* shift */
 $if -t

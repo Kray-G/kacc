@@ -1,4 +1,4 @@
-/* Calculator in kmyacc + Kinx. */
+/* Calculator in Kacc. */
 
 %{
 using @kacc.Lexer;
@@ -21,7 +21,7 @@ lines
 line
     : assign  { $$ = $1; }
     | expr { $$ = $1; }
-    | error { $$ = ""; }
+    | error { $$.value = "<error>"; }
     ;
 
 assign
@@ -45,10 +45,10 @@ expr
 var lexer = new Kacc.Lexer();
 lexer.addRule(/[a-zA-Z][a-zA-Z0-9]*/, TOKEN_IDENTIFIER);
 lexer.addRule(/[ \t\r]+/, KACC_LEXER_SKIP);
-lexer.addRule(/[1-9][0-9]*/, &(yylval) => {
+lexer.addRule(/[1-9][0-9]*/) { &(yylval)
     yylval.value = Integer.parseInt(yylval.value);
     return TOKEN_NUMBER;
-});
+};
 
 /* Parser */
 
@@ -71,13 +71,13 @@ var exprs = [
     "2+3",
     "3 + 5 * 9",
     "c=24",
-    "a 1",
+    "a 1",  // Syntax error
     "a=10",
     "b=70",
     "a+b+c",
 ];
 exprs.each { &(expr)
     parser.parse(expr.trim()) { &(r)
-        System.println(expr, " = ", r.value);
+        System.println(expr, " => ", r.value);
     };
 };

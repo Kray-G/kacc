@@ -1,15 +1,8 @@
 using Process;
 
-/*
-|   Option   |                                                                                                                Meaning                                                                                                                 |
-| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-d`       | Makes definition file named y.tab.h, which contains definitions of token values and the type of semantic stack. (C language only)                                                                                                      |
-| `-v`       | Generates file y.output which contains human-readable parser tables and diagnostics.                                                                                                                                                   |
-| `-l`       | Does not insert #line control directives in y.tab.c.                                                                                                                                                                                   |
-| `-t`       | Generates debugging code.  Compiling with -DYYDEBUG option gives the same effect.                                                                                                                                                      |
-| `-p XX`    | Uses XX rather than yy as the prefix of global identifiers in the parser.  You can avoid collision of external symbols when you use more than one parser in the same program by specifing this option. (C language only)               |
+/**
+    Setup values
 */
-
 const isWindows = System.PLATFORM.endsWith("-WIN");
 const pkglibpath = __FILE__.replace("\\", "/").replace(new Regex("^" + $pkgpath.replace("\\", "/") + "/*"), "");
 const [ pkgname, version ] = pkglibpath.split("/");
@@ -17,23 +10,33 @@ const pkgpath = $pkgpath.replace("\\", "/") / pkgname / version;
 const PARSER_KMYACC = isWindows ? "bin/exec/kmyacc.exe" : "bin/exec/kmyacc";
 const PARSER_GENEERATOR = pkgpath / PARSER_KMYACC;
 const PARSER_TEMPALTE = pkgpath / "etc/kmyacc.kx.parser";
+var outfile = "parser.kx";
+var infofile = "parser.output";
 
+/**
+    Analyze options
+*/
 $$.shift();
 var opt, command = [ PARSER_GENEERATOR, "-m", PARSER_TEMPALTE ];
-while (opt = System.getopt($$, "dvltp:")) {
+while (opt = System.getopt($$, "dvltp:o:d:")) {
     switch (opt.type) {
-    case 'd':
     case 'v':
     case 'l':
     case 't':
         command.push("-" + opt.type);
         break;
     case 'p':
-        command.push("-" + opt.type + " " + opt.arg);
+        command.push("-" + opt.type);
+        break;
+    case 'o':
+        outfile = opt.arg;
+        break;
+    case 'd':
+        infofile = opt.arg;
         break;
     case '-': {
         var file = isWindows ? opt.arg.replace("\\", "/") : opt.arg;
-        command.push(file.replace($pwd + "/", ""));
+        command.push(file);
         break;
     }
     default:
@@ -41,15 +44,21 @@ while (opt = System.getopt($$, "dvltp:")) {
     }
 }
 
+/**
+    Generate a parser
+*/
 # System.println(command);
 var p1 = new Process(command, { out: $stdout, err: $stderr }).run();
 p1.wait();
 
+/**
+    Output files
+*/
 if (File.exists("y.tab.c")) {
-    File.remove("parser.kx");
-    File.rename("y.tab.c", "parser.kx");
+    File.remove(outfile);
+    File.rename("y.tab.c", outfile);
 }
 if (File.exists("y.output")) {
-    File.remove("parser.output");
-    File.rename("y.output", "parser.output");
+    File.remove(infofile);
+    File.rename("y.output", infofile);
 }
