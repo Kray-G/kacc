@@ -105,6 +105,11 @@ var parser = new Kacc.Parser(lexer, {
     setVar:  &(name, value) => vars[name] = value,
     getVar:  &(name)        => vars[name],
 });
+
+/* Calculation */
+parser.parse("2 + 3 * 5") {
+    System.println(_1.value);   // => 17
+};
 ```
 
 ## License
