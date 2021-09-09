@@ -12,20 +12,22 @@ class Lexer {
     var keywords_ = [];
     var text_, pos_ = 0;
 
-    public addStateRule(state, pattern, token, action) {
+    public addStateRule(name, pattern, token, action) {
         if (token.isFunction && action.isUndefined) {
             action = token;
             token = null;
         }
-        if (!state.isString) {
+        if (!name.isString) {
             throw RuntimeException("State name should be a string.");
         }
         var callback = action.isFunction ? action : null;
         if (token.isUndefined && action.isInteger) {
             token = action;
         }
-        states_[state] ??= [];
-        states_[state].push({ pattern, callback, token });
+        var state = { pattern, callback, token };
+        states_[name] ??= [];
+        states_[name].push(state);
+        return state;
     }
 
     public addRule(pattern, token, action) {
@@ -63,6 +65,10 @@ class Lexer {
         cur_ = state;
     }
 
+    public $(state) {
+        cur_ = state;
+    }
+
     private scan(states, yylval) {
         for (var { pattern, callback, token } in states) {
             pattern.setPosition(pos_);
@@ -71,9 +77,9 @@ class Lexer {
                 yylval.value = found.string;
                 if (callback.isFunction) {
                     if (token.isUndefined) {
-                        return callback(yylval);
+                        return callback(yylval, this);
                     }
-                    yylval.value = callback(yylval.value);
+                    yylval.value = callback(yylval.value, this);
                 }
                 return token;
             }
@@ -95,7 +101,7 @@ class Lexer {
                     var keys = keywords.keySet().sort(&(e1, e2) => e2.length() <=> e1.length());
                     states.unshift({
                         pattern: new Regex("(" + keys.join(")|(") + ")"),
-                        callback: &(this, value) => keywords[value] ?? KACC_LEXER_STATE_EOF,
+                        callback: &(value) => keywords[value] ?? KACC_LEXER_STATE_EOF,
                     });
                 }
             }
