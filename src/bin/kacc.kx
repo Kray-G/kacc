@@ -13,52 +13,95 @@ const PARSER_TEMPALTE = pkgpath / "etc/kmyacc.kx.parser";
 var outfile = "parser.kx";
 var infofile = "parser.output";
 
-/**
-    Analyze options
-*/
-$$.shift();
-var opt, command = [ PARSER_GENEERATOR, "-m", PARSER_TEMPALTE ];
-while (opt = System.getopt($$, "dvltp:o:d:")) {
-    switch (opt.type) {
-    case 'v':
-    case 'l':
-    case 't':
-        command.push("-" + opt.type);
-        break;
-    case 'p':
-        command.push("-" + opt.type);
-        break;
-    case 'o':
-        outfile = opt.arg;
-        break;
-    case 'd':
-        infofile = opt.arg;
-        break;
-    case '-': {
-        var file = isWindows ? opt.arg.replace("\\", "/") : opt.arg;
-        command.push(file);
-        break;
+class Kacc {
+    var command_ = [ PARSER_GENEERATOR, "-m", PARSER_TEMPALTE ];
+
+    public usage() {
+        $stderr.println("Usage: kacc [-vltpod] parser.y");
+        $stderr.println("    -v          Generates the file of parser.output which contains human-");
+        $stderr.println("                readable parser tables and diagnostics.");
+        $stderr.println("    -l          Does not insert #line control directives in parser.kx.");
+        $stderr.println("    -t          Generates a debugging code.");
+        $stderr.println("    -p XX       Uses XX rather than Kacc as a namespace of the parser.");
+        $stderr.println("    -o FILE     FILE will be used as an output file instead of parser.kx");
+        $stderr.println("                which is by default.");
+        $stderr.println("    -d FILE     FILE will be used instead of parser.output.");
+        return 1;
     }
-    default:
-        break;
+
+    public analyze(args) {
+        /**
+            Analyze options
+        */
+        var file, opt;
+        args.shift();
+        while (opt = System.getopt(args, "dvltp:o:d:")) {
+            switch (opt.type) {
+            case 'v':
+            case 'l':
+            case 't':
+                command_.push("-" + opt.type);
+                break;
+            case 'p':
+                command_.push("-" + opt.type);
+                break;
+            case 'o':
+                outfile = opt.arg;
+                break;
+            case 'd':
+                infofile = opt.arg;
+                break;
+            case '-': {
+                file = isWindows ? opt.arg.replace("\\", "/") : opt.arg;
+                command_.push(file);
+                if (!File.exists(file)) {
+                    $stderr.println("File not found: " + file);
+                    return false;
+                }
+                break;
+            }
+            default:
+                break;
+            }
+        }
+        return file ? true : false;
+    }
+
+    private cleanup() {
+        File.remove("y.tab.c");
+        File.remove("y.output");
+    }
+
+    public run() {
+        /**
+            Generate a parser
+        */
+        # System.println(command_);
+        var p1 = new Process(command_, { out: $stdout, err: $stderr }).run();
+        var r = p1.wait();
+        if (r != 0) {
+            cleanup();
+            return false;
+        }
+
+        /**
+            Output files
+        */
+        if (File.exists("y.tab.c")) {
+            File.remove(outfile);
+            File.rename("y.tab.c", outfile);
+        }
+        if (File.exists("y.output")) {
+            File.remove(infofile);
+            File.rename("y.output", infofile);
+        }
+        return true;
     }
 }
 
-/**
-    Generate a parser
-*/
-# System.println(command);
-var p1 = new Process(command, { out: $stdout, err: $stderr }).run();
-p1.wait();
+var kacc = new Kacc();
+if (!kacc.analyze($$)) {
+    return kacc.usage();
+}
 
-/**
-    Output files
-*/
-if (File.exists("y.tab.c")) {
-    File.remove(outfile);
-    File.rename("y.tab.c", outfile);
-}
-if (File.exists("y.output")) {
-    File.remove(infofile);
-    File.rename("y.output", infofile);
-}
+return kacc.run() ? 0 : 1;
