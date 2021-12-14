@@ -45,6 +45,22 @@ var lexer = new Kacc.Lexer();
 lexer.addSkip(/[ \t\r]+/);
 lexer.addRule(/[_a-zA-Z][_a-zA-Z0-9]*/, TOKEN_IDENTIFIER);
 lexer.addRule(/[0-9]+/, TOKEN_NUMBER) { &(value) => Integer.parseInt(value) };
+lexer.addRule(/\/\*/) { &(value, this)
+    ++@commentCount;
+    return @$('COMMENT', KACC_LEXER_SKIP);
+};
+lexer.addStateRule('COMMENT', /\*\/|\/\*|./) { &(value, this)
+    if (value.value == '/*') {
+        ++@commentCount;
+    }
+    if (value.value == '*/') {
+        if (--@commentCount == 0) {
+            return @$(KACC_LEXER_STATE_INITIAL, KACC_LEXER_SKIP);
+        }
+    }
+    return KACC_LEXER_SKIP;
+};
+// lexer.debugOn(lexer.DEBUG_STATE|lexer.DEBUG_TOKEN|lexer.DEBUG_VALUE);
 
 /* Parser */
 var vars = {};
@@ -59,10 +75,10 @@ var exprs = [
     "2+3",
     "3 + 5 * 9",
     "(3 + 5) * 9",
-    "c=24",
+    "c= /*comment*/ 24",
     "a 1",  // Syntax error
-    "a=10",
-    "b=70+a",
+    "a= 10",
+    "b=70+/* aaa /* nested comment is also available */*/a",
     "a+b+c",
 ];
 exprs.each { &(expr)
