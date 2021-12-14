@@ -69,8 +69,11 @@ lexer.addSkip(/[ \t\r]+/);
 This is same as below.
 
 ```javascript
-lexer.addRule(/[ \t\r]+/, KACC_LEXER_SKIP);
+lexer.addSkip(/[ \t\r]+/, KACC_LEXER_SKIP);
+lexer.addStateSkip(KACC_LEXER_STATE_INITIAL, /[ \t\r]+/);
 ```
+
+Please see also `addRule` and `addStateSkip` for details.
 
 #### addRule(pattern, token, action)
 
@@ -159,7 +162,7 @@ lexer.addStateRule('COMMENT', /\*\/|\/\*|./) { &(value, this)
 
 ### For Parser
 
-**DO NOT USE** these methods because this method should be used only by a parser.
+**DO NOT USE** these methods because these methods should be used only by a parser.
 
 #### reset(text)
 
