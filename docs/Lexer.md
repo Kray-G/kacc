@@ -135,7 +135,7 @@ It means that the `addKeyword` method is the special method for the state of `KA
 
 The lexer has a state internally. This is used when you want to change the state. The default state is `KACC_LEXER_STATE_INITIAL` which means `"INITIAL"`, and the state should be a string. You can set rules per state, and you can change the state during parsing.
 
-See below about how to use it. You should pass the `this` object as a sencond argument to the callback function if you want to use this method. `@$` is also available instead of `@setState`.
+See below about how to use it. You should pass the `this` object as a second argument to the callback function if you want to use this method. `@$` is also available instead of `@setState`.
 
 ```javascript
 lexer.addRule(/\/\*/) { &(value, this)
