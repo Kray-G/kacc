@@ -6,11 +6,30 @@ namespace Kacc {
 
 class Lexer {
 
+    @DEBUG_STATE = 0x01;
+    @DEBUG_TOKEN = 0x02;
+    @DEBUG_VALUE = 0x04;
+    var debug_ = 0;
     var cur_ = KACC_LEXER_STATE_INITIAL;
     var inited_ = [];
     var states_ = [];
+    var stateMap_ = {};
     var keywords_ = [];
     var text_, pos_ = 0;
+
+    private debugShow(flag, msg) {
+        if (debug_ & flag) {
+            System.println("[lexer] " + msg);
+        }
+    }
+
+    public debugOn(flags) {
+        debug_ |= flags;
+    }
+
+    public debugOff(flags) {
+        debug_ &= ~flags;
+    }
 
     public addStateRule(name, pattern, token, action) {
         if (token.isFunction && action.isUndefined) {
@@ -20,6 +39,7 @@ class Lexer {
         if (!name.isString) {
             throw RuntimeException("State name should be a string.");
         }
+        stateMap_[name] = true;
         var callback = action.isFunction ? action : null;
         if (token.isUndefined && action.isInteger) {
             token = action;
@@ -56,20 +76,25 @@ class Lexer {
 
     public reset(text) {
         cur_ = KACC_LEXER_STATE_INITIAL;
-        inited_.keySet().each { => inited_[_1].reset = false };
+        stateMap_.keySet().each { inited_[_1].reset = false; };
         text_ = text;
         pos_ = 0;
     }
 
-    public setState(state) {
+    public setState(state, token) {
         cur_ = state;
+        return token;
     }
 
-    public $(state) {
+    public $(state, token) {
         cur_ = state;
+        return token;
     }
 
     private scan(states, yylval) {
+        if (text_.length() <= pos_) {
+            return KACC_LEXER_STATE_EOF;
+        }
         for (var { pattern, callback, token } in states) {
             pattern.setPosition(pos_);
             if (pattern.find() && (found = pattern.group[0]).begin == pos_) {
@@ -88,32 +113,39 @@ class Lexer {
     }
 
     public yylex(yylval) {
-        var states = states_[cur_];
-        if (!states) {
-            throw RuntimeException("Invalid state of '%{cur_}'.");
-        }
-        if (!inited_[cur_].reset) {
-            inited_[cur_].reset = true;
-            if (!inited_[cur_].initialized) {
-                inited_[cur_].initialized = true;
-                var keywords = keywords_[cur_];
-                if (keywords.isObject) {
-                    var keys = keywords.keySet().sort(&(e1, e2) => e2.length() <=> e1.length());
-                    states.unshift({
-                        pattern: new Regex("(" + keys.join(")|(") + ")"),
-                        callback: &(value) => keywords[value] ?? KACC_LEXER_STATE_EOF,
-                    });
-                }
-            }
-            for (var { pattern } in states) {
-                pattern.reset(text_);
-            }
-        }
+        var cur, states;
         if (pos_ < text_.length()) {
             var r;
             do {
+                if (cur_ != cur) {
+                    debugShow(@DEBUG_STATE, "=> State[%{cur_}]");
+                    states = states_[cur_];
+                    cur = cur_;
+                    if (!inited_[cur_].reset) {
+                        inited_[cur_].reset = true;
+                        if (!inited_[cur_].initialized) {
+                            inited_[cur_].initialized = true;
+                            var keywords = keywords_[cur_];
+                            if (keywords.isObject) {
+                                var keys = keywords.keySet().sort(&(e1, e2) => e2.length() <=> e1.length());
+                                states.unshift({
+                                    pattern: new Regex("(" + keys.join(")|(") + ")"),
+                                    callback: &(value) => keywords[value] ?? KACC_LEXER_STATE_EOF,
+                                });
+                            }
+                        }
+                        for (var { pattern } in states) {
+                            pattern.reset(text_);
+                        }
+                    }
+                }
+                if (!states) {
+                    throw RuntimeException("Invalid state of '%{cur_}'.");
+                }
                 r = scan(states, yylval);
             } while (r == KACC_LEXER_SKIP);
+            debugShow(@DEBUG_TOKEN, "  => Token[%{r}]");
+            debugShow(@DEBUG_VALUE, "  => Value = %{[yylval]}");
             return r;
         }
         return KACC_LEXER_STATE_EOF;
