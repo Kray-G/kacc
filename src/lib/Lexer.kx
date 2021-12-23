@@ -62,16 +62,17 @@ class Lexer {
         return addStateRule(KACC_LEXER_STATE_INITIAL, pattern, KACC_LEXER_SKIP);
     }
 
-    public addStateKeyword(state, word, token) {
+    public addStateKeyword(state, word, token, action) {
         if (!state.isString) {
             throw RuntimeException("State name should be a string.");
         }
         keywords_[state] ??= [];
-        keywords_[state][word] = token;
+        keywords_[state][word].token = token;
+        keywords_[state][word].callback = action;
     }
 
-    public addKeyword(word, token) {
-        return addStateKeyword(KACC_LEXER_STATE_INITIAL, word, token);
+    public addKeyword(word, token, action) {
+        return addStateKeyword(KACC_LEXER_STATE_INITIAL, word, token, action);
     }
 
     public reset(text) {
@@ -130,7 +131,15 @@ class Lexer {
                                 var keys = keywords.keySet().sort(&(e1, e2) => e2.length() <=> e1.length());
                                 states.unshift({
                                     pattern: new Regex("(" + keys.join(")|(") + ")"),
-                                    callback: &(value) => keywords[value] ?? KACC_LEXER_STATE_EOF,
+                                    callback: &(yylval) => {
+                                        var key = keywords[yylval.value ?? yylval];
+                                        var tk = key.token;
+                                        var cb = key.callback;
+                                        if (cb.isFunction) {
+                                            return cb(yylval, tk);
+                                        }
+                                        return tk ?? KACC_LEXER_STATE_EOF;
+                                    },
                                 });
                             }
                         }
