@@ -18,6 +18,7 @@ class Kacc {
 
     public usage() {
         $stderr.println("Usage: kacc [-vltpod] parser.y");
+        $stderr.println("    -h          Displays this help.");
         $stderr.println("    -v          Generates the file of parser.output which contains human-");
         $stderr.println("                readable parser tables and diagnostics.");
         $stderr.println("    -l          Does not insert #line control directives in parser.kx.");
@@ -35,8 +36,10 @@ class Kacc {
         */
         var file, opt;
         args.shift();
-        while (opt = System.getopt(args, "dvltp:o:d:")) {
+        while (opt = System.getopt(args, "hdvltp:o:d:")) {
             switch (opt.type) {
+            case 'h':
+                return false;
             case 'v':
             case 'l':
             case 't':
