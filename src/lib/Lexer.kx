@@ -130,7 +130,7 @@ class Lexer {
                             if (keywords.isObject) {
                                 var keys = keywords.keySet().sort(&(e1, e2) => e2.length() <=> e1.length());
                                 states.unshift({
-                                    pattern: new Regex("(" + keys.join(")|(") + ")"),
+                                    pattern: new Regex("\b(" + keys.join(")|(") + ")\b"),
                                     callback: &(yylval) => {
                                         var key = keywords[yylval.value ?? yylval];
                                         var tk = key.token;
