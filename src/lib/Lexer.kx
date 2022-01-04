@@ -15,6 +15,7 @@ class Lexer {
     var states_ = [];
     var stateMap_ = {};
     var keywords_ = [];
+    var keychars_ = [];
     var text_, pos_ = 0;
 
     private debugShow(flag, msg) {
@@ -66,9 +67,15 @@ class Lexer {
         if (!state.isString) {
             throw RuntimeException("State name should be a string.");
         }
-        keywords_[state] ??= [];
-        keywords_[state][word].token = token;
-        keywords_[state][word].callback = action;
+        if (word =~ /[_a-zA-Z][_a-zA-Z0-9]*/) {
+            keywords_[state] ??= [];
+            keywords_[state][word].token = token;
+            keywords_[state][word].callback = action;
+        } else {
+            keychars_[state] ??= [];
+            keychars_[state][word].token = token;
+            keychars_[state][word].callback = action;
+        }
     }
 
     public addKeyword(word, token, action) {
@@ -97,17 +104,31 @@ class Lexer {
             return KACC_LEXER_STATE_EOF;
         }
         for (var { pattern, callback, token } in states) {
-            pattern.setPosition(pos_);
-            if (pattern.find() && (found = pattern.group[0]).begin == pos_) {
-                pos_ = found.end;
-                yylval.value = found.string;
-                if (callback.isFunction) {
-                    if (token.isUndefined) {
-                        return callback(yylval, this);
+            if (pattern.isRegex) {
+                pattern.setPosition(pos_);
+                if (pattern.find() && (found = pattern.group[0]).begin == pos_) {
+                    pos_ = found.end;
+                    yylval.value = found.string;
+                    if (callback.isFunction) {
+                        if (token.isUndefined) {
+                            return callback(yylval, this);
+                        }
+                        yylval.value = callback(yylval.value, this);
                     }
-                    yylval.value = callback(yylval.value, this);
+                    return token;
                 }
-                return token;
+            } else if (pattern.isString) {
+                if (text_[pos_] == pattern[0] && text_.subString(pos_, pattern.length()) == pattern) {
+                    pos_ += pattern.length();
+                    yylval.value = pattern;
+                    if (callback.isFunction) {
+                        if (token.isUndefined) {
+                            return callback(yylval, this);
+                        }
+                        yylval.value = callback(yylval.value, this);
+                    }
+                    return token;
+                }
             }
         }
         return text_[pos_++];
@@ -126,11 +147,28 @@ class Lexer {
                         inited_[cur_].reset = true;
                         if (!inited_[cur_].initialized) {
                             inited_[cur_].initialized = true;
+                            var keychars = keychars_[cur_];
+                            if (keychars.isObject) {
+                                keychars.keySet().each {
+                                    states.unshift({
+                                        pattern: _1,
+                                        callback: &(yylval) => {
+                                            var key = keychars[yylval.value ?? yylval];
+                                            var tk = key.token;
+                                            var cb = key.callback;
+                                            if (cb.isFunction) {
+                                                return cb(yylval, tk);
+                                            }
+                                            return tk ?? KACC_LEXER_STATE_EOF;
+                                        },
+                                    });
+                                };
+                            }
                             var keywords = keywords_[cur_];
                             if (keywords.isObject) {
                                 var keys = keywords.keySet().sort(&(e1, e2) => e2.length() <=> e1.length());
                                 states.unshift({
-                                    pattern: new Regex("\b(" + keys.join(")|(") + ")\b"),
+                                    pattern: new Regex("\\b(" + keys.join(")|(") + ")\\b"),
                                     callback: &(yylval) => {
                                         var key = keywords[yylval.value ?? yylval];
                                         var tk = key.token;
@@ -144,7 +182,9 @@ class Lexer {
                             }
                         }
                         for (var { pattern } in states) {
-                            pattern.reset(text_);
+                            if (pattern.isRegex) {
+                                pattern.reset(text_);
+                            }
                         }
                     }
                 }
